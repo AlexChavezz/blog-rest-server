@@ -1,9 +1,7 @@
 const { ObjectId } = require('mongodb');
 
 
-
 const commentsCollection = require('../database/Client').db('blog').collection('comments');
-const repliesCollection = require('../database/Client').db('blog').collection('replies');
 
 const getCommentsByPost = async (req, res) => {
     const { post:postTitle } = req.params;
@@ -13,18 +11,7 @@ const getCommentsByPost = async (req, res) => {
             { $match: { "postTitle": postTitle } }
         ]).toArray();
 
-        comments.forEach(async(comment) => {
-            try
-            {
-                comment.replies = await repliesCollection.find({ "commentId": ObjectId(comment._id) }).toArray();
-                return res.status(200).json(comments);
-            }
-            catch(error)
-            {
-                console.log(error);
-                return res.status(500).json({message:"Internal Server Error"})
-            }
-        })
+        return res.status(200).json(comments);
     }
     catch(error)
     {
@@ -36,13 +23,16 @@ const getCommentsByPost = async (req, res) => {
 
 const saveComment = async (req, res) => {
 
-    const document = {
-        ...req.body,
-    }
+    const document = req.body;
+    console.log(document)
     try
     {
         const { insertedId } = await commentsCollection.insertOne(document);
-        return res.status(200).json({message:"comment inserted success", insertedId});
+        if( insertedId )
+        {
+            return res.status(200).json({message:"comment inserted success", insertedId});
+        }
+        return res.status(400).json({message:"Bad request"})
     }
     catch(err)
     {
@@ -52,7 +42,29 @@ const saveComment = async (req, res) => {
 }
 
 
+const updateCommentReplies = async (req, res) => {
+    const object = req.body;
+    console.log(object)
+    object.reply_id = new ObjectId();
+    const { _id , ...rest} = object;
+    try
+    {
+        const { acknowledged, ...dada } = await commentsCollection.updateOne({ "_id": {$eq: ObjectId(_id)} }, {$push:{replies: rest}})
+        console.log(dada)
+        if(acknowledged)
+        {
+            return res.status(200).json({message:"comment updated success", insertedId: object.reply_id});
+        }    
+    }
+    catch(error)
+    {
+        console.log(error);
+        return res.status(500).json({message:"Internal Server Error"})
+    }
+}
+
 module.exports = {
     getCommentsByPost,
-    saveComment
+    saveComment,
+    updateCommentReplies
 }

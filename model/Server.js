@@ -17,7 +17,7 @@ class Server {
     }
     routes()
     {
-        this.app.use(this.path, require('../routes/blog.routes'));
+        this.app.use(`${this.path}/comments`, require('../routes/blog.routes'));
     }
     dbconnection()
     {
