@@ -8,7 +8,8 @@ async function getPosts(req, res)
 {
     try
     {
-        const posts = await postsCollection.find({}).sort({date: -1}).toArray();
+        const posts = await postsCollection.find({}, {projection: { _id: 0, path: 1, postName: 1, date: 1, categories: 1, author: 1, mainImage: 1 }})
+        .sort({date: -1}).toArray();
         return res.status(200).json(posts);
     }
     catch(error)
