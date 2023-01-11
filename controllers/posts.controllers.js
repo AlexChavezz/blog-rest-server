@@ -42,7 +42,36 @@ async function getPostByPath(req, res) {
     }
 }
 
-
+async function autoCompleteIndex(req, res){
+    try
+    {
+        const keyword = req.params.keyword;
+        const pipeline = [
+            {
+                $search: {
+                    autocomplete:{
+                        query: keyword,
+                        path: "content"
+                    }
+                },
+            },
+            {
+                $project: {
+                    "_id": 0,
+                    "postName": 1,
+                    "path": 1,
+                }
+            }
+        ]
+        const posts = await postsCollection.aggregate(pipeline).toArray();
+        return res.status(200).json(posts);
+    }
+    catch(error)
+    {
+        console.log(error)
+        return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
+    }
+}
 
 async function pushPost(req, res)
 {
@@ -60,5 +89,6 @@ async function pushPost(req, res)
 module.exports = {
     getPosts,
     getPostPaths,
-    getPostByPath
+    getPostByPath,
+    autoCompleteIndex
 }
