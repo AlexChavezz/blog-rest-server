@@ -59,7 +59,7 @@ async function autoCompleteIndex(req, res){
                 $project: {
                     "_id": 0,
                     "postName": 1,
-                    "path": 1,
+                    "path": 1
                 }
             }
         ]
