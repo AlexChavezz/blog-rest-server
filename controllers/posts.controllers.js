@@ -73,6 +73,20 @@ async function autoCompleteIndex(req, res){
     }
 }
 
+async function getLastPost(req, res){
+    try
+    {
+        const lastPost = await postsCollection.find({}).sort({date: -1})
+        .limit(1).toArray();
+        return res.status(200).json(lastPost);
+    }
+    catch(error)
+    {
+        console.log(error)
+        return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
+    }
+}
+
 async function pushPost(req, res)
 {
     try
@@ -90,5 +104,7 @@ module.exports = {
     getPosts,
     getPostPaths,
     getPostByPath,
-    autoCompleteIndex
+    autoCompleteIndex,
+    getLastPost,
+
 }
