@@ -1,6 +1,6 @@
 
 const client = require("../database/Client");
-
+const {v4 : uuidv4} = require('uuid');
 const postsCollection = client.db('blog').collection('posts');
 
 /* Function that should return all posts exists in the database */
@@ -87,11 +87,13 @@ async function getLastPost(req, res){
     }
 }
 
-async function pushPost(req, res)
+async function createPost(req, res)
 {
     try
     {
-
+        const post = req.body;
+        await postsCollection.insertOne(post);
+        return res.status(201).json({ message: "Post was created successfully" });
     }
     catch(error)
     {
@@ -99,6 +101,37 @@ async function pushPost(req, res)
     }
 }
 
+const multer = require('multer');
+const { BlobServiceClient } = require("@azure/storage-blob");
+const 
+    inMemoryStorage = multer.memoryStorage()
+    uploadStrategy = multer({ storage: inMemoryStorage }).single('image')
+
+
+async function uploadImage(req, res)
+{
+    try
+    {
+        const file = req.file;
+        file.originalname = uuidv4() + file.originalname;
+        
+        // -> get blob container client
+        const blobServiceClient = BlobServiceClient.fromConnectionString(
+            process.env.AZURE_STORAGE_CONNECTION_STRING
+        );
+        const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME);
+
+        // -> Set file name. This must be unique.
+        const blobBlockClient = containerClient.getBlockBlobClient(file.originalname);
+        await blobBlockClient.upload(req.file.buffer, req.file.buffer.length);
+        return res.status(201).json({ message: "File was uploaded successfully", thumbnailUrl: blobBlockClient.url });
+    }
+    catch(error)
+    {
+        console.log(error)
+        return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
+    }
+}
 
 module.exports = {
     getPosts,
@@ -106,5 +139,6 @@ module.exports = {
     getPostByPath,
     autoCompleteIndex,
     getLastPost,
-
+    createPost,
+    uploadImage
 }
