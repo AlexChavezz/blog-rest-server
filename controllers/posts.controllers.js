@@ -92,7 +92,7 @@ async function createPost(req, res)
     try
     {
         const post = req.body;
-        await postsCollection.insertOne(post);
+        await postsCollection.insertOne({...post, date: new Date()});
         return res.status(201).json({ message: "Post was created successfully" });
     }
     catch(error)
