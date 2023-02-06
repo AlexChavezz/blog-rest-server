@@ -89,6 +89,10 @@ async function getLastPost(req, res){
 
 async function createPost(req, res)
 {
+    if( req.body.SECRET_KEY !== process.env.SECRET_KEY )
+    {
+        return res.status(401).json({ message: "UNAUTHORIZED" });
+    }
     try
     {
         const post = req.body;
