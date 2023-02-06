@@ -1,55 +1,47 @@
 
 const client = require("../database/Client");
-const {v4 : uuidv4} = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const postsCollection = client.db('blog').collection('posts');
 
 /* Function that should return all posts exists in the database */
-async function getPosts(req, res)
-{
-    try
-    {
-        const posts = await postsCollection.find({}, {projection: { _id: 0, path: 1, postName: 1, date: 1, categories: 1, author: 1, mainImage: 1 }})
-        .sort({date: -1}).toArray();
+async function getPosts(req, res) {
+    try {
+        const posts = await postsCollection.find({}, { projection: { _id: 0, path: 1, postName: 1, date: 1, categories: 1, author: 1, mainImage: 1 } })
+            .sort({ date: -1 }).toArray();
         return res.status(200).json(posts);
     }
-    catch(error)
-    {
+    catch (error) {
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
-async function getPostPaths (req, res){
-    try
-    {
-        const postPaths = await postsCollection.find({}, { projection: {path: 1, _id: 0 }}).toArray();
+async function getPostPaths(req, res) {
+    try {
+        const postPaths = await postsCollection.find({}, { projection: { path: 1, _id: 0 } }).toArray();
         return res.status(200).json(postPaths);
     }
-    catch(error)
-    {
+    catch (error) {
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
 async function getPostByPath(req, res) {
-    try
-    {
+    try {
         const post = await postsCollection.findOne({ path: req.params.path });
         return res.status(200).json(post);
     }
-    catch(error)
-    {
+    catch (error) {
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
-async function autoCompleteIndex(req, res){
-    try
-    {
+async function autoCompleteIndex(req, res) {
+    try {
         const keyword = req.params.keyword;
         const pipeline = [
             {
                 $search: {
-                    autocomplete:{
+                    autocomplete: {
                         query: keyword,
                         path: "content"
                     }
@@ -66,59 +58,52 @@ async function autoCompleteIndex(req, res){
         const posts = await postsCollection.aggregate(pipeline).toArray();
         return res.status(200).json(posts);
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error)
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
-async function getLastPost(req, res){
-    try
-    {
-        const lastPost = await postsCollection.find({}).sort({date: -1})
-        .limit(1).toArray();
+async function getLastPost(req, res) {
+    try {
+        const lastPost = await postsCollection.find({}).sort({ date: -1 })
+            .limit(1).toArray();
         return res.status(200).json(lastPost);
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error)
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
-async function createPost(req, res)
-{
-    if( req.body.SECRET_KEY !== process.env.SECRET_KEY )
-    {
+async function createPost(req, res) {
+    const { SECRET_KEY, ...post } = req.body;
+    if (SECRET_KEY !== process.env.SECRET_KEY) {
         return res.status(401).json({ message: "UNAUTHORIZED" });
     }
-    try
-    {
-        const post = req.body;
-        await postsCollection.insertOne({...post, date: new Date()});
+    try {
+
+        // const post = req.body
+        await postsCollection.insertOne({ ...post, date: new Date() });
         return res.status(201).json({ message: "Post was created successfully", ok: true });
     }
-    catch(error)
-    {
+    catch (error) {
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
 }
 
 const multer = require('multer');
 const { BlobServiceClient } = require("@azure/storage-blob");
-const 
+const
     inMemoryStorage = multer.memoryStorage()
-    uploadStrategy = multer({ storage: inMemoryStorage }).single('image')
+uploadStrategy = multer({ storage: inMemoryStorage }).single('image')
 
 
-async function uploadImage(req, res)
-{
-    try
-    {
+async function uploadImage(req, res) {
+    try {
         const file = req.file;
         file.originalname = uuidv4() + file.originalname;
-        
+
         // -> get blob container client
         const blobServiceClient = BlobServiceClient.fromConnectionString(
             process.env.AZURE_STORAGE_CONNECTION_STRING
@@ -130,8 +115,7 @@ async function uploadImage(req, res)
         await blobBlockClient.upload(req.file.buffer, req.file.buffer.length);
         return res.status(201).json({ message: "File was uploaded successfully", thumbnailUrl: blobBlockClient.url });
     }
-    catch(error)
-    {
+    catch (error) {
         console.log(error)
         return res.status(500).json({ message: "INTERNAL SERVER ERROR" });
     }
