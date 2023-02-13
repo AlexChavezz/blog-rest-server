@@ -103,7 +103,7 @@ async function uploadImage(req, res) {
     try {
         const file = req.file;
         file.originalname = uuidv4() + file.originalname;
-
+        console.log(req.file)
         // -> get blob container client
         const blobServiceClient = BlobServiceClient.fromConnectionString(
             process.env.AZURE_STORAGE_CONNECTION_STRING
@@ -112,7 +112,7 @@ async function uploadImage(req, res) {
 
         // -> Set file name. This must be unique.
         const blobBlockClient = containerClient.getBlockBlobClient(file.originalname);
-        await blobBlockClient.upload(req.file.buffer, req.file.buffer.length);
+        await blobBlockClient.upload(req.file.buffer, req.file.buffer.length, { blobHTTPHeaders: { blobContentType: req.file.mimetype }});
         return res.status(201).json({ message: "File was uploaded successfully", thumbnailUrl: blobBlockClient.url });
     }
     catch (error) {
