@@ -44,7 +44,6 @@ const saveComment = async (req, res) => {
 
 const updateCommentReplies = async (req, res) => {
     const object = req.body;
-    console.log(object)
     object.reply_id = new ObjectId();
     const { _id , ...rest} = object;
     try
@@ -63,8 +62,10 @@ const updateCommentReplies = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     getCommentsByPost,
     saveComment,
-    updateCommentReplies
+    updateCommentReplies,
 }

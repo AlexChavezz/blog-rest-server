@@ -94,6 +94,7 @@ async function createPost(req, res) {
 
 const multer = require('multer');
 const { BlobServiceClient } = require("@azure/storage-blob");
+const { ObjectId } = require("mongodb");
 const
     inMemoryStorage = multer.memoryStorage()
 uploadStrategy = multer({ storage: inMemoryStorage }).single('image')
@@ -121,6 +122,61 @@ async function uploadImage(req, res) {
     }
 }
 
+
+/*
+
+    RECOMENDATIONS FUNCTIONALITY
+
+*/
+
+
+async function getRecommendations(req, res)  {
+    const {categories, _id} = req.body;
+    if( !categories )
+    {
+        return res.status(400).json({message:"Bad Request"});
+    }
+    const pipeline = [
+        {
+           
+            $search: {
+                index: "searchRecomendations",
+                compound: {
+                    "should": [{
+                        text: {
+                            query: categories,
+                            path: "categories"
+                        }
+                    }]
+                }
+            }
+        },
+        {$match: {
+            "_id": {$not:{$eq: ObjectId(_id) } }
+        }},
+        {
+            $limit: 4
+        },
+        {
+            $project: {
+                "_id": 0,
+                content: 0,
+            }
+        }
+    ];
+    try
+    {
+        const results = await postsCollection.aggregate(pipeline).toArray();
+        return res.status(200).json({results});
+    }
+    catch(error)
+    {
+        console.log(error)
+        return res.status(500).json({message:"Internal Server Error"})
+    }
+}
+
+
 module.exports = {
     getPosts,
     getPostPaths,
@@ -128,5 +184,6 @@ module.exports = {
     autoCompleteIndex,
     getLastPost,
     createPost,
-    uploadImage
+    uploadImage,
+    getRecommendations
 }
